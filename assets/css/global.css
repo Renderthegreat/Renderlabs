@@ -1,0 +1,42 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Ubuntu, Roboto, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    background-color: var(--background-color);
+    color: var(--foreground-color);
+}
+
+#main {
+    min-height: calc(100vh - 120px);
+}
+
+.page {
+    display: inline-block;
+    justify-content: space-between;
+    align-items: center;
+}
+
+FrostedGlass {
+    width: auto;
+    height: auto;
+    border-radius: 10%;
+}
+
+/* Scrollbar */
+html {
+    scrollbar-width: none;
+}
+  
+
+
+:root {
+    --background-color: #000;
+    --foreground-color: #000;
+    --link-color: #2e89ff;
+    --alert-button-default-color: #2e89ff;
+    --alert-button-danger-color: #ff4141;
+}

@@ -1,6 +1,6 @@
 <template>
-  <div class="frosted-wrapper" ref="frostedWrapper">
-    <div class="blurred-background" ref="blurredBackground"></div>
+  <div class="frosted-wrapper">
+    <div class="blurred-background"></div>
     <div class="foreground-content">
       <slot></slot>
     </div>
@@ -20,6 +20,8 @@ slot {
   left: 50%;
   transform: translate(-50%, -50%);
   overflow: hidden;
+  width: fit-content;
+  height: fit-content;
   border-radius: 10px;
 }
 
@@ -31,6 +33,7 @@ slot {
   backdrop-filter: blur(15px);
   background-repeat: no-repeat;
   background-position: center;
+  background-color: var(--background-color);
 }
 
 .blurred-background::before {
@@ -40,5 +43,6 @@ slot {
 .foreground-content {
   position: relative;
   filter: none;
+  padding: 16px;
 }
 </style>
