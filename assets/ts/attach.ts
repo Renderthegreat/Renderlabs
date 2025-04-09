@@ -1,13 +1,15 @@
-let theme = null;
+import { useClient } from "~/composable/useClient";
+
+let theme: string = "";
 
 if (process.client) {
-    theme = localStorage.getItem("theme");
+    theme = localStorage.getItem("theme")?.toString() || "";
     if (!theme) {
         theme = "light";
         localStorage.setItem("theme", theme);
     };
 };
-const setTheme = (theme) => {
+const setTheme = (theme: string) => {
     switch (theme) {
         case "light": {
             document.documentElement.style.setProperty("--foreground-color", "#161616");
@@ -25,5 +27,5 @@ const setTheme = (theme) => {
 setTheme(theme);
 
 export default {
-    
+
 };

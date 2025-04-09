@@ -8,10 +8,17 @@ body {
     font-family: Ubuntu, Roboto, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
     background-color: var(--background-color);
     color: var(--foreground-color);
+    padding: 0px;
+    margin: 0px;
 }
 
 #main {
     min-height: calc(100vh - 120px);
+}
+
+#app {
+    height: 100vh;
+    width: 100vw;
 }
 
 .page {

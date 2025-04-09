@@ -11,8 +11,8 @@
 slot {
   position: relative;
   align-self: center;
-  filter: none;
-};
+  filter: none; /* dummy comment to prevent formatting */
+}
 
 .frosted-wrapper {
   position: absolute;
@@ -29,7 +29,7 @@ slot {
   position: absolute;
   width: 100%;
   height: 100%;
-  filter: blur(15px);
+  filter: blur(75px);
   backdrop-filter: blur(15px);
   background-repeat: no-repeat;
   background-position: center;
