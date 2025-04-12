@@ -4,10 +4,12 @@
     <p>Welcome to the Renderlabs site!</p>
     <Movable>
       <FrostedGlass>
-        <UButton>Hello</UButton>
+        <Captcha></Captcha>
       </FrostedGlass>
     </Movable>
   </div>
 </template>
 
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import Captcha from "~/components/Captcha.vue";
+</script>

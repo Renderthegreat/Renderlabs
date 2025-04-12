@@ -16,3 +16,12 @@ const dialect = new PostgresDialect({ pool });
 export const db = new Kysely<DB>({
     dialect
 });
+
+setInterval(async () => {
+    const threshold = new Date(Date.now() - 25 * 60 * 1000);
+
+    await db
+        .deleteFrom("captchas")
+        .where("expires_at", "<", threshold)
+        .execute();
+}, 5 * 1000);

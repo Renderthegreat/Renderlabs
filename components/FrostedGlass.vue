@@ -30,7 +30,7 @@ slot {
   width: 100%;
   height: 100%;
   filter: blur(75px);
-  backdrop-filter: blur(15px);
+  backdrop-filter: blur(25px);
   background-repeat: no-repeat;
   background-position: center;
   background-color: var(--background-color);

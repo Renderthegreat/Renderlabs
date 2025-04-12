@@ -8,8 +8,9 @@ export enum ManagerEventInputAutofillType {
 };
 
 export enum ManagerEventInputType {
-    STRING,
-    NUMBER,
+    STRING = "string",
+    NUMBER = "number",
+    BOOLEAN = "boolean"
 };
 
 export enum ManagerEventType {
@@ -24,7 +25,7 @@ export enum ManagerEventType {
     // Server packets
     OPERATION_SUCCESS = 0xf01,
     OPERATION_FAILURE = 0xf02,
-
+    ACCOUNT_NOTIFICATION = 0xf03
 };
 
 export const ManagerEventTypeFormat = {
@@ -93,6 +94,53 @@ export const ManagerEventTypeFormat = {
     }
 };
 
+export function validateEventFormat(event: { eventType: ManagerEventType, parameters: Record<string, any> }) {
+    const format = (ManagerEventTypeFormat as any)[event.eventType];
+    if (!format) {
+        return {
+            success: false,
+            error: `Unknown event type: ${event.eventType}`
+        };
+    };
+
+    for (const key in format) {
+        const expected = format[key];
+        const value = event.parameters[key];
+
+        if (value === undefined || value === null) {
+            return {
+                success: false,
+                error: `Missing required field: ${key}`
+            };
+        };
+
+        const types = expected.type;
+        const valueType = typeof value;
+
+        const isValid = types.some((t: any) => {
+            switch (t) {
+                case ManagerEventInputType.STRING:
+                    return valueType === 'string';
+                case ManagerEventInputType.NUMBER:
+                    return valueType === 'number' && !isNaN(value);
+                case ManagerEventInputType.BOOLEAN:
+                    return valueType === 'boolean';
+                default:
+                    return false;
+            }
+        });
+
+        if (!isValid) {
+            return {
+                success: false,
+                error: `Invalid type for field "${key}". Expected ${types.join(', ')}, got ${valueType}`
+            };
+        };
+    };
+
+    return { success: true };
+};
+
 export class ManagerEvent {
     constructor(
         public eventType: ManagerEventType,
@@ -113,7 +161,6 @@ export class ManagerEvent {
         const eventType = raw[0];
         const charCodes = Array.from(raw.slice(1));
         const paramString = String.fromCharCode(...charCodes);
-        console.log(paramString);
         return new ManagerEvent(eventType, JSON.parse(paramString.replace(/\0/g, "")));
     };
 

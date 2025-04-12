@@ -23,6 +23,7 @@
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
     "@types/pg": "^8.11.11",
-    "@types/ws": "^8.18.1"
+    "@types/ws": "^8.18.1",
+    "nuxt-use-sound": "^1.0.8"
   }
 }

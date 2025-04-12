@@ -2,20 +2,64 @@ import { ManagerEvent, ManagerEventType, waitForReady } from "~/assets/ts/manage
 
 export class RenderlabsClient {
     constructor() {
-        this.socket = new WebSocket(`ws:${window.location.hostname}:3001`);
         this.toast = useToast();
+        this.connect();
     };
-    async sendEvent(event: ManagerEvent) {
+    private connect(retryDelay = 1000) {
+        this.socket = new WebSocket(`ws://${window.location.hostname}:3001`);
+
+        this.socket.onopen = () => {
+            console.log("Connected to server ✅");
+        };
+
+        this.socket.onclose = () => {
+            console.warn(`Lost connection. Retrying in ${retryDelay}ms...`);
+
+            setTimeout(async () => {
+                try {
+                    this.socket = new WebSocket(`ws://${window.location.hostname}:3001`);
+                    await waitForReady(this.socket);
+                    this.connect(); // Re-register handlers
+                } catch (err) {
+                    const nextDelay = Math.min(retryDelay * 2, 30000); // Max 30s
+                    console.error("Reconnect failed. Retrying again...");
+                    this.connect(nextDelay);
+                };
+            }, retryDelay);
+        };
+
+        this.socket.onerror = (err) => {
+            console.error("WebSocket error:", err);
+        };
+    };
+
+    private async sendEvent(event: ManagerEvent) {
         await waitForReady(this.socket);
         this.socket.send(event.getRaw());
     };
-    recieveEvent(callback: (event: ManagerEvent) => {}) {
-        this.socket.onmessage = async (event) => {
-            console.log(event.data);
-            callback(ManagerEvent.fromRaw(await blobToUint32Array(event.data)));
+    private recieveEvent(callback: (event: ManagerEvent) => {}) {
+        this.socket.onmessage = async (data) => {
+            const event = ManagerEvent.fromRaw(await blobToUint32Array(data.data));
+            if (event.eventType === ManagerEventType.ACCOUNT_NOTIFICATION) {
+                this.toast.add({
+                    id: event.parameters["id"],
+                    title: event.parameters["title"],
+                    description: event.parameters["description"],
+                    icon: event.parameters["icon"]
+                });
+            };
+            callback(event);
         };
     };
-    private socket: WebSocket;
+    public async $post(event: ManagerEvent) {
+        const response = new Promise<ManagerEvent>(async (resolve) => {
+            this.recieveEvent(resolve as any);
+        });
+
+        await this.sendEvent(event);
+        return await response;
+    };
+    private socket!: WebSocket;
     public toast: ReturnType<typeof useToast>;
 };
 

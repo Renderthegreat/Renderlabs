@@ -1,12 +1,13 @@
 /*
  * Server side only!
  */
-import { ManagerEvent, ManagerEventType } from "~/assets/ts/manager";
+import { ManagerEvent, ManagerEventType, validateEventFormat } from "~/assets/ts/manager";
 import { sql, Kysely, PostgresDialect } from "kysely";
 import { db, pool } from "~/assets/ts/db";
 import bcrypt from "bcrypt";
 import { randomBytes, createCipheriv, createDecipheriv, scryptSync } from 'crypto';
 import svgCaptcha from 'svg-captcha';
+import { atob } from "buffer";
 
 const encryptionKey = randomBytes(32);
 const iv = randomBytes(16);
@@ -15,7 +16,7 @@ export function encrypt(data: string) {
     const cipher = createCipheriv('aes-256-cbc', encryptionKey, iv);
     let encrypted = cipher.update(data, 'utf-8', 'hex');
     encrypted += cipher.final('hex');
-    return { encryptedData: encrypted, iv: iv.toString('hex') };
+    return { data: encrypted, iv: iv.toString('hex') };
 };
 export function decrypt(encryptedData: string, ivHex: string) {
     const decipher = createDecipheriv('aes-256-cbc', encryptionKey, Buffer.from(ivHex, 'hex'));
@@ -32,27 +33,27 @@ export function validateCaptchaValidator(data: string, ivHex: string) {
     if (new Date > expireTime) {
         return new ManagerEvent(ManagerEventType.OPERATION_FAILURE, {
             "status": 410,
-            "description": "Captcha validator has expired"
+            "description": "captcha_validator_expired"
         });
     };
     return null;
 };
 
-export function validateParameters(type: ManagerEventType, parameters: any) {
-
-};
-
 export async function route(event: ManagerEvent) {
     const badRequest = new ManagerEvent(ManagerEventType.OPERATION_FAILURE, {
         "status": 400,
-        "description": "Bad request"
+        "description": "bad_request"
     });
     const serverError = new ManagerEvent(ManagerEventType.OPERATION_FAILURE, {
         "status": 500,
-        "description": "Server error"
+        "description": "server_error"
     });
     const saltRounds = 10;
     const salt = bcrypt.genSaltSync(saltRounds);
+    const validation = validateEventFormat({ eventType: event.eventType, parameters: event.parameters });
+    if (!validation.success) {
+        return badRequest;
+    };
     try {
         switch (event.eventType) {
             case ManagerEventType.CLIENT_INIT: {
@@ -62,28 +63,30 @@ export async function route(event: ManagerEvent) {
                 let query;
                 if (event.parameters["username"] && event.parameters["password"]) {
                     query = db.selectFrom("users")
+                        .selectAll()
                         .where("users.name", '=', event.parameters["username"])
                         .executeTakeFirst;
                 } else if (event.parameters["token"]) {
                     query = db.selectFrom("users")
+                        .selectAll()
                         .where("users.token", '=', event.parameters["token"])
                         .executeTakeFirst;
                 } else {
                     return badRequest;
                 };
 
-                const user = await query() as any;
+                const user = await query();
                 if (!user) {
                     return new ManagerEvent(ManagerEventType.OPERATION_FAILURE, {
                         "status": 401,
-                        "description": "Invalid credentials"
+                        "description": "invalid_credentials"
                     });
                 };
                 const isPasswordCorrect = bcrypt.compareSync(event.parameters["password"], user.password);
                 if (!isPasswordCorrect) {
                     return new ManagerEvent(ManagerEventType.OPERATION_FAILURE, {
                         "status": 401,
-                        "description": "Invalid credentials"
+                        "description": "invalid_credentials"
                     });
                 };
             };
@@ -112,7 +115,7 @@ export async function route(event: ManagerEvent) {
                 if (existingUser) {
                     return new ManagerEvent(ManagerEventType.OPERATION_FAILURE, {
                         "status": 409,
-                        "description": "User already exists"
+                        "description": "user_already_exists"
                     });
                 };
 
@@ -134,7 +137,7 @@ export async function route(event: ManagerEvent) {
                 // Return success
                 return new ManagerEvent(ManagerEventType.OPERATION_SUCCESS, {
                     "status": 201,
-                    "description": "Account created successfully",
+                    "description": "account_created",
                     "token": token
                 });
             };
@@ -143,9 +146,10 @@ export async function route(event: ManagerEvent) {
                 const expireTime = (new Date());
                 const id = Math.round(Math.random() * 1000000);
                 expireTime.setMinutes(expireTime.getMinutes() + 5);
-                await db.insertInto("capchas")
+                await db.insertInto("captchas")
                     .values({
                         "id": id,
+                        "svg": captcha.data,
                         "key": btoa(captcha.text),
                         "expires_at": expireTime
                     })
@@ -158,31 +162,32 @@ export async function route(event: ManagerEvent) {
             case ManagerEventType.VALIDATE_CAPTCHA: {
                 const { id, key } = event.parameters;
 
-                const captcha = await db.selectFrom("capchas")
+                const captcha = await db.selectFrom("captchas")
+                    .selectAll()
                     .where("id", "=", id)
-                    .executeTakeFirst() as any;
+                    .executeTakeFirst();
                 if (!captcha) {
                     return new ManagerEvent(ManagerEventType.OPERATION_FAILURE, {
                         "status": 404,
-                        "description": "Captcha not found"
+                        "description": "captcha_not_found"
                     });
                 };
 
-                if (new Date(captcha["expires_at"]) < new Date()) {
+                if (captcha["expires_at"] < new Date()) {
                     return new ManagerEvent(ManagerEventType.OPERATION_FAILURE, {
                         "status": 410,
-                        "description": "Captcha has expired"
+                        "description": "captcha_time_expired"
                     });
                 };
 
-                if (atob(captcha["key"]) !== key) {
+                if (captcha["key"] != key) {
                     return new ManagerEvent(ManagerEventType.OPERATION_FAILURE, {
                         "status": 403,
-                        "description": "Invalid captcha key"
+                        "description": "captcha_invalid_key"
                     });
                 };
 
-                const capchaValidator = encrypt(captcha["expires_at"]);
+                const capchaValidator = encrypt(captcha["expires_at"].toString());
 
                 return new ManagerEvent(ManagerEventType.OPERATION_SUCCESS, {
                     "captcha": capchaValidator
@@ -191,7 +196,7 @@ export async function route(event: ManagerEvent) {
             default: {
                 return new ManagerEvent(ManagerEventType.OPERATION_FAILURE, {
                     "status": 404,
-                    "description": "API not found"
+                    "description": "command_not_found"
                 });
             };
         };

@@ -3,12 +3,16 @@
     <FrostedGlass>
       <h1 class="site-header-title">Renderlabs</h1>
       <nav>
-        <router-link to="/">Home</router-link>
-        <router-link to="/about">About</router-link>
+        <ULink to="/">{{ $t("home") }}</ULink>
+        <ULink to="/about">{{ $t("about") }}</ULink>
       </nav>
     </FrostedGlass>
   </header>
 </template>
+
+<script setup>
+import { $t } from "~/assets/ts/translate";
+</script>
 
 <style scoped>
 FrostedGlass {

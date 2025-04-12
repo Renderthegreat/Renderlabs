@@ -14,7 +14,7 @@ export default defineNitroPlugin((nitroApp) => {
           await connection.sendEvent(response);
         });
       } catch (err) {
-        console.log(err);
+        console.error(err);
       }
     });
   });

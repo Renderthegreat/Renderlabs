@@ -1,0 +1,20 @@
+{
+    "en": {
+        "renderlabs": "Renderlabs",
+        "all_rights_reserved": "All rights reserved",
+        "home": "Home",
+        "about": "About",
+        "bad_request": "Bad request",
+        "server_error": "Server error",
+        "captcha_success": "Captcha successful",
+        "captcha_success_description": "You are not a robot!",
+        "captcha_generate": "Generate captcha",
+        "captcha_placeholder": "ABCD",
+        "captcha_submit": "Submit captcha",
+        "captcha_submitting": "Submitting captcha",
+        "captcha_failed": "Captcha failed",
+        "captcha_invalid_key": "Captcha Incorrect",
+        "captcha_empty": "Please solve the captcha",
+        "captcha_time_expired": "Captcha expired"
+    }
+}

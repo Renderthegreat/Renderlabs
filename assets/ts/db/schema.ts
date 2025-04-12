@@ -7,9 +7,10 @@ export interface DB {
         token: string;
         created_at: Date;
     };
-    capchas: {
+    captchas: {
         id: number,
         key: string,
+        svg: string,
         expires_at: Date
     };
     stats: {
