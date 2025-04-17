@@ -1,7 +1,6 @@
 <template>
   <div class="page">
-    <h2>Home</h2>
-    <p>Welcome to the Renderlabs site!</p>
+    <Document path="/content/index/welcome.md" />
     <Movable>
       <FrostedGlass>
         <Captcha></Captcha>

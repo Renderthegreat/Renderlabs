@@ -1,4 +1,5 @@
 import { useClient } from "~/composable/useClient";
+import { $t } from "~/assets/ts/translate";
 
 let theme: string = "";
 
@@ -12,13 +13,13 @@ if (process.client) {
 const setTheme = (theme: string) => {
     switch (theme) {
         case "light": {
-            document.documentElement.style.setProperty("--foreground-color", "#161616");
+            document.documentElement.style.setProperty("--foreground-color", "rgb(17 24 39)");
             document.documentElement.style.setProperty("--background-color", "#e8e8e8");
             break;
         };
         case "dark": {
             document.documentElement.style.setProperty("--foreground-color", "#e8e8e8");
-            document.documentElement.style.setProperty("--background-color", "#161616");
+            document.documentElement.style.setProperty("--background-color", "rgb(17 24 39)");
             break;
         };
     };

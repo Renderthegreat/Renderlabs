@@ -13,8 +13,4 @@ export interface DB {
         svg: string,
         expires_at: Date
     };
-    stats: {
-        user_count: number,
-        last_updated: Date
-    };
 };

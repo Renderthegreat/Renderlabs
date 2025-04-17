@@ -1,9 +1,11 @@
 <template>
   <footer class="site-footer">
-    <p>
-      &copy; {{ new Date().getFullYear() }} {{ $t("renderlabs") }}.
-      {{ $t("all_rights_reserved") }}.
-    </p>
+    <FrostedGlass class="site-footer-glass">
+      <p>
+        &copy; {{ new Date().getFullYear() }} {{ $t("renderlabs") }}.
+        {{ $t("all_rights_reserved") }}.
+      </p>
+    </FrostedGlass>
   </footer>
 </template>
 
@@ -17,5 +19,9 @@ import { $t } from "~/assets/ts/translate";
   padding: 12px;
   background: var(--background-color);
   backdrop-filter: blur(10px);
+  z-index: 100;
+}
+
+.site-footer-glass {
 }
 </style>

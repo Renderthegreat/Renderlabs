@@ -1,9 +1,11 @@
 import { ManagerEvent, ManagerEventType, waitForReady } from "~/assets/ts/manager";
+import { $t } from "~/assets/ts/translate";
 
 export class RenderlabsClient {
     constructor() {
         this.toast = useToast();
         this.connect();
+        this.editor = new DocumentEditor(this);
     };
     private connect(retryDelay = 1000) {
         this.socket = new WebSocket(`ws://${window.location.hostname}:3001`);
@@ -43,9 +45,19 @@ export class RenderlabsClient {
             if (event.eventType === ManagerEventType.ACCOUNT_NOTIFICATION) {
                 this.toast.add({
                     id: event.parameters["id"],
+                    title: $t(event.parameters["title"]),
+                    description: $t(event.parameters["description"]),
+                    icon: event.parameters["icon"],
+                    color: event.parameters["color"]
+                });
+            };
+            if (event.eventType === ManagerEventType.OPERATION_FAILURE && event.parameters["description"] == "server_error") {
+                this.toast.add({
+                    id: event.parameters["id"],
                     title: event.parameters["title"],
-                    description: event.parameters["description"],
-                    icon: event.parameters["icon"]
+                    description: $t("server_error"),
+                    icon: "i-heroicons-exclamation-triangle-solid",
+                    color: "amber"
                 });
             };
             callback(event);
@@ -59,8 +71,21 @@ export class RenderlabsClient {
         await this.sendEvent(event);
         return await response;
     };
+    public setToken(token: string) {
+        localStorage.setItem("token", token);
+    };
     private socket!: WebSocket;
     public toast: ReturnType<typeof useToast>;
+    public editor: DocumentEditor;
+};
+
+class DocumentEditor {
+    constructor(public client: RenderlabsClient) {
+
+    };
+    public initalize() {
+
+    };
 };
 
 function blobToUint32Array(blob: Blob): Promise<Uint32Array> {

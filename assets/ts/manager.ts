@@ -10,7 +10,8 @@ export enum ManagerEventInputAutofillType {
 export enum ManagerEventInputType {
     STRING = "string",
     NUMBER = "number",
-    BOOLEAN = "boolean"
+    BOOLEAN = "boolean",
+    ANY = "any",
 };
 
 export enum ManagerEventType {
@@ -40,10 +41,6 @@ export const ManagerEventTypeFormat = {
         }
     },
     [ManagerEventType.ACCOUNT_LOGIN]: {
-        "username": {
-            "type": [ManagerEventInputType.STRING],
-            "autofill": [ManagerEventInputAutofillType.USERNAME]
-        },
         "email": {
             "type": [ManagerEventInputType.STRING],
             "autofill": [ManagerEventInputAutofillType.EMAIL]
@@ -51,10 +48,6 @@ export const ManagerEventTypeFormat = {
         "password": {
             "type": [ManagerEventInputType.STRING],
             "autofill": [ManagerEventInputAutofillType.PASSWORD]
-        },
-        "token": {
-            "type": [ManagerEventInputType.STRING],
-            "autofill": [ManagerEventInputAutofillType.TOKEN]
         }
     },
     [ManagerEventType.ACCOUNT_CREATE]: {
@@ -70,14 +63,10 @@ export const ManagerEventTypeFormat = {
             "type": [ManagerEventInputType.STRING],
             "autofill": [null]
         },
-        "captcha-id": {
-            "type": [ManagerEventInputType.NUMBER],
+        "validator": {
+            "type": [ManagerEventInputType.ANY],
             "autofill": [null]
         },
-        "captcha-solution": {
-            "type": [ManagerEventInputType.STRING],
-            "autofill": [null]
-        }
     },
     [ManagerEventType.GENERATE_CAPTCHA]: {
 
@@ -125,6 +114,8 @@ export function validateEventFormat(event: { eventType: ManagerEventType, parame
                     return valueType === 'number' && !isNaN(value);
                 case ManagerEventInputType.BOOLEAN:
                     return valueType === 'boolean';
+                case ManagerEventInputType.ANY:
+                    return Boolean(valueType);
                 default:
                     return false;
             }

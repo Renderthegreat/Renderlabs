@@ -8,6 +8,10 @@ export class RenderlabsConnection {
     };
     async sendEvent(event: ManagerEvent) {
         await waitForReady(this.socket);
+        if (!event.getRaw) {
+            console.warn("Event is not a ManagerEvent?", event);
+            return;
+        }
         this.socket.send(event.getRaw());
     };
     recieveEvent(callback: (event: ManagerEvent) => {}) {

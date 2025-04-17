@@ -1,20 +1,27 @@
 <template>
   <div class="captcha-box">
     <Button @click="generateCaptcha">
-      <span>{{ $t("captcha_generate") }}</span>
+      <Icon name="i-heroicons-lock-closed-solid"></Icon>
+      {{ $t("auth.captcha.generate") }}
     </Button>
 
     <transition name="fade">
       <div v-if="captchaSvg" class="captcha-container">
         <div class="svg-wrapper" v-html="captchaSvg"></div>
-        <UInput
-          v-model="captchaSolution"
-          :placeholder="$t(`captcha_placeholder`)"
-        />
-        <Button :disabled="submitting" @click="submitCaptcha">
-          <Icon name="i-heroicons-check-badge"></Icon>
-          <span v-if="!submitting">{{ $t("captcha_submit") }}</span>
-          <span v-else>{{ $t("captcha_submitting") }}</span>
+        <UFormField
+          :label="$t('auth.captcha.solution')"
+          :error="captchaError"
+          :success="captchaSuccess"
+        >
+          <UPinInput v-model="captchaSolution" :length="8" />
+        </UFormField>
+        <Button
+          :disabled="submitting || submitted"
+          @click="submitCaptcha"
+          :icon="submitted ? 'i-heroicons-check-badge-solid' : null"
+        >
+          <span v-if="!submitting">{{ $t("auth.captcha.submit") }}</span>
+          <span v-else>{{ $t("auth.captcha.submitting") }}</span>
         </Button>
       </div>
     </transition>
@@ -32,13 +39,20 @@ const emit = defineEmits(["captcha-auth"]);
 const client = useClient();
 const captchaSvg = ref("");
 const captchaId = ref(null);
-const captchaSolution = ref("");
+const captchaSolution = ref([]);
+const captchaKey = ref(null);
+const captchaError = ref("");
+const captchaSuccess = ref("");
 const submitting = ref(false);
+const submitted = ref(false);
 
 async function generateCaptcha() {
   const response = await client.$post(
     new ManagerEvent(ManagerEventType.GENERATE_CAPTCHA, {})
   );
+  submitted.value = false;
+  captchaSuccess.value = "";
+  captchaError.value = "";
 
   if (response?.parameters?.svg && response?.parameters?.id !== undefined) {
     captchaSvg.value = response.parameters.svg;
@@ -49,12 +63,7 @@ async function generateCaptcha() {
 
 async function submitCaptcha() {
   if (!captchaId.value || !captchaSolution.value) {
-    client.toast.add({
-      id: "captcha",
-      description: $t("captcha_empty"),
-      color: "red",
-      icon: "i-heroicons-exclamation-triangle",
-    });
+    captchaError.value = $t("auth.captcha.empty");
     return;
   }
 
@@ -63,34 +72,26 @@ async function submitCaptcha() {
   const response = await client.$post(
     new ManagerEvent(ManagerEventType.VALIDATE_CAPTCHA, {
       id: captchaId.value,
-      key: btoa(captchaSolution.value),
+      key: btoa(captchaSolution.value.join("")),
     })
   );
 
   submitting.value = false;
 
   if (response?.eventType === ManagerEventType.OPERATION_SUCCESS) {
-    client.toast.add({
-      id: "captcha",
-      title: $t("captcha_success"),
-      description: $t("captcha_success_description"),
-      color: "green",
-      icon: "i-heroicons-check-circle-solid",
-    });
-    emit("captcha-auth", {
-      id: captchaId.value,
-      key: btoa(captchaSolution.value),
-    });
+    captchaError.value = null;
+    captchaKey.value = response.parameters["captcha"];
+    submitted.value = true;
+    captchaSuccess.value = $t("auth.captcha.success");
   } else {
-    client.toast.add({
-      id: "captcha",
-      title: $t("captcha_failed"),
-      description: $t(response.parameters["description"]),
-      color: "red",
-      icon: "i-heroicons-exclamation-circle-solid",
-    });
+    captchaError.value = $t(response.parameters["description"]);
   }
 }
+
+defineExpose({
+  id: captchaId.value,
+  key: captchaKey,
+});
 </script>
 
 <style scoped>
@@ -98,7 +99,7 @@ async function submitCaptcha() {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  align-items: start;
+  width: 100%;
 }
 
 .captcha-container {
@@ -110,7 +111,7 @@ async function submitCaptcha() {
 
 .svg-wrapper {
   animation: fade-in 0.5s ease;
-  max-width: 250px;
+  max-width: 100%;
   padding: 0.5rem;
   background: #fff;
   border-radius: 0.5rem;

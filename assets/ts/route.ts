@@ -8,6 +8,7 @@ import bcrypt from "bcrypt";
 import { randomBytes, createCipheriv, createDecipheriv, scryptSync } from 'crypto';
 import svgCaptcha from 'svg-captcha';
 import { atob } from "buffer";
+import { date } from "valibot";
 
 const encryptionKey = randomBytes(32);
 const iv = randomBytes(16);
@@ -33,17 +34,20 @@ export function validateCaptchaValidator(data: string, ivHex: string) {
     if (new Date > expireTime) {
         return new ManagerEvent(ManagerEventType.OPERATION_FAILURE, {
             "status": 410,
-            "description": "captcha_validator_expired"
+            "description": "auth.captcha.validator_expired"
         });
     };
     return null;
 };
 
-export async function route(event: ManagerEvent) {
-    const badRequest = new ManagerEvent(ManagerEventType.OPERATION_FAILURE, {
-        "status": 400,
-        "description": "bad_request"
-    });
+export async function route(event: ManagerEvent): Promise<ManagerEvent> {
+    const badRequest = (error: string | undefined) => {
+        return new ManagerEvent(ManagerEventType.OPERATION_FAILURE, {
+            "status": 400,
+            "description": "bad_request",
+            "error": error
+        });
+    };
     const serverError = new ManagerEvent(ManagerEventType.OPERATION_FAILURE, {
         "status": 500,
         "description": "server_error"
@@ -52,7 +56,7 @@ export async function route(event: ManagerEvent) {
     const salt = bcrypt.genSaltSync(saltRounds);
     const validation = validateEventFormat({ eventType: event.eventType, parameters: event.parameters });
     if (!validation.success) {
-        return badRequest;
+        return badRequest(validation.error);
     };
     try {
         switch (event.eventType) {
@@ -61,51 +65,46 @@ export async function route(event: ManagerEvent) {
             };
             case ManagerEventType.ACCOUNT_LOGIN: {
                 let query;
-                if (event.parameters["username"] && event.parameters["password"]) {
+                if (event.parameters["email"] && event.parameters["password"]) {
                     query = db.selectFrom("users")
                         .selectAll()
-                        .where("users.name", '=', event.parameters["username"])
-                        .executeTakeFirst;
+                        .where("users.email", '=', event.parameters["email"]);
                 } else if (event.parameters["token"]) {
                     query = db.selectFrom("users")
                         .selectAll()
-                        .where("users.token", '=', event.parameters["token"])
-                        .executeTakeFirst;
+                        .where("users.token", '=', event.parameters["token"]);
                 } else {
-                    return badRequest;
+                    return badRequest("Uncaught error");
                 };
-
-                const user = await query();
+                const user = await query.executeTakeFirst();
                 if (!user) {
                     return new ManagerEvent(ManagerEventType.OPERATION_FAILURE, {
                         "status": 401,
-                        "description": "invalid_credentials"
+                        "description": "auth.invalid_credentials"
                     });
                 };
                 const isPasswordCorrect = bcrypt.compareSync(event.parameters["password"], user.password);
                 if (!isPasswordCorrect) {
                     return new ManagerEvent(ManagerEventType.OPERATION_FAILURE, {
                         "status": 401,
-                        "description": "invalid_credentials"
+                        "description": "auth.invalid_credentials"
                     });
                 };
+                return new ManagerEvent(ManagerEventType.OPERATION_SUCCESS, {
+                    "status": 200,
+                    "token": user.token,
+                    "id": user.id,
+                    "created_at": user.created_at
+                })
             };
             case ManagerEventType.ACCOUNT_CREATE: {
-                const { username, email, password, captcha_validator } = event.parameters;
+                const { username, email, password, validator } = event.parameters;
 
-                if (!username || !password || !captcha_validator) {
-                    return badRequest;
-                };
-
-                const validCaptchaValidator = validateCaptchaValidator(captcha_validator["data"], captcha_validator["captcha_validator.iv"]);
+                const validCaptchaValidator = validateCaptchaValidator(validator["data"], validator["iv"]);
                 if (validCaptchaValidator) {
                     return validCaptchaValidator;
                 };
 
-                await db.updateTable("stats")
-                    .set("stats.user_count", (await sql<number>`user_count + 1`.execute(db)).rows[0])
-                    .execute();
-                const id = (await sql<number>`user_count`.execute(db)).rows[0];
                 const existingUser = await db.selectFrom("users")
                     .where((eb) => eb.or([
                         eb("users.email", "=", email),
@@ -115,9 +114,12 @@ export async function route(event: ManagerEvent) {
                 if (existingUser) {
                     return new ManagerEvent(ManagerEventType.OPERATION_FAILURE, {
                         "status": 409,
-                        "description": "user_already_exists"
+                        "description": "auth.user_already_exists"
                     });
                 };
+                const id = (await db.selectFrom("users")
+                    .selectAll()
+                    .execute()).length + 1;
 
                 const hashedPassword = bcrypt.hashSync(password, salt);
 
@@ -137,12 +139,12 @@ export async function route(event: ManagerEvent) {
                 // Return success
                 return new ManagerEvent(ManagerEventType.OPERATION_SUCCESS, {
                     "status": 201,
-                    "description": "account_created",
+                    "description": "auth.account_created",
                     "token": token
                 });
             };
             case ManagerEventType.GENERATE_CAPTCHA: {
-                const captcha = svgCaptcha.create();
+                const captcha = svgCaptcha.create({ size: 8 });
                 const expireTime = (new Date());
                 const id = Math.round(Math.random() * 1000000);
                 expireTime.setMinutes(expireTime.getMinutes() + 5);
@@ -169,21 +171,21 @@ export async function route(event: ManagerEvent) {
                 if (!captcha) {
                     return new ManagerEvent(ManagerEventType.OPERATION_FAILURE, {
                         "status": 404,
-                        "description": "captcha_not_found"
+                        "description": "auth.captcha.not_found"
                     });
                 };
 
                 if (captcha["expires_at"] < new Date()) {
                     return new ManagerEvent(ManagerEventType.OPERATION_FAILURE, {
                         "status": 410,
-                        "description": "captcha_time_expired"
+                        "description": "auth.captcha.time_expired"
                     });
                 };
 
                 if (captcha["key"] != key) {
                     return new ManagerEvent(ManagerEventType.OPERATION_FAILURE, {
                         "status": 403,
-                        "description": "captcha_invalid_key"
+                        "description": "auth.captcha.invalid_key"
                     });
                 };
 

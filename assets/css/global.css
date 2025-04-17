@@ -1,6 +1,7 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
 * {
-    margin: 0;
-    padding: 0;
     box-sizing: border-box;
 }
 
@@ -37,8 +38,6 @@ FrostedGlass {
 html {
     scrollbar-width: none;
 }
-  
-
 
 :root {
     --background-color: #000;

@@ -6,15 +6,45 @@
         "about": "About",
         "bad_request": "Bad request",
         "server_error": "Server error",
-        "captcha_success": "Captcha successful",
-        "captcha_success_description": "You are not a robot!",
-        "captcha_generate": "Generate captcha",
-        "captcha_placeholder": "ABCD",
-        "captcha_submit": "Submit captcha",
-        "captcha_submitting": "Submitting captcha",
-        "captcha_failed": "Captcha failed",
-        "captcha_invalid_key": "Captcha Incorrect",
-        "captcha_empty": "Please solve the captcha",
-        "captcha_time_expired": "Captcha expired"
+        "auth": {
+            "login": {
+                "label": "Login",
+                "success":"Login successful",
+                "": ""
+            },
+            "signup": {
+                "label": "Signup",
+                "success":"Signup successful",
+                "": ""
+            },
+            "captcha": {
+                "generate": "Generate captcha",
+                "submit": "Submit captcha",
+                "submitting": "Submitting captcha",
+                "solution": "Please solve the captcha to confirm that you are not a robot",
+                "success": "Captcha successful",
+                "failed": "Captcha failed",
+                "invalid_key": "Captcha Incorrect",
+                "empty": "Please solve the captcha",
+                "time_expired": "Captcha expired",
+                "validator_expired": "Captcha validator expired",
+                "": ""
+            },
+            "email": "Email",
+            "username": "Username",
+            "password": "Password",
+            "confirm_password": "Confirm password",
+            "error": "Authentication error",
+            "success": "Authentication success",
+            "": ""
+        },
+        "input": {
+            "invalid_email": "Invalid email",
+            "at_least": "must be at least",
+            "at_most": "must be less than",
+            "characters": "characters",
+            "": ""
+        },
+        "": ""
     }
 }
